@@ -6,6 +6,7 @@ const Joi = require("joi");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
+const { dbOperations } = require("./database");
 const app = express();
 const jwt = require("jsonwebtoken");
 
@@ -115,8 +116,6 @@ const validateToken = (req, res, next) => {
   }
 };
 
-let refreshTokens = [];
-
 /**
  * @swagger
  * /token:
@@ -141,26 +140,23 @@ let refreshTokens = [];
  *       403:
  *         description: არასწორი refresh token
  */
-app.post("/token", validateToken, (req, res) => {
+app.post("/token", validateToken, async (req, res) => {
   try {
     const refreshToken = req.body.token;
     if (refreshToken == null) {
       return res.status(401).json({ error: "Refresh token required" });
     }
-    if (!refreshTokens.includes(refreshToken)) {
-      return res.status(403).json({ error: "Invalid refresh token" });
+
+    // Validate refresh token from database
+    const username = await dbOperations.validateRefreshToken(refreshToken);
+    if (!username) {
+      return res
+        .status(403)
+        .json({ error: "Invalid or expired refresh token" });
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-      if (err) {
-        if (err.name === "TokenExpiredError") {
-          return res.status(401).json({ error: "Refresh token expired" });
-        }
-        return res.status(403).json({ error: "Invalid refresh token" });
-      }
-      const accessToken = generateAccessToken({ name: user.name });
-      res.json({ accessToken: accessToken });
-    });
+    const accessToken = generateAccessToken({ name: username });
+    res.json({ accessToken: accessToken });
   } catch (error) {
     console.error("Token refresh error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -185,11 +181,16 @@ app.post("/token", validateToken, (req, res) => {
  *       400:
  *         description: არასწორი მონაცემები
  */
-app.delete("/logout", validateToken, (req, res) => {
+app.delete("/logout", validateToken, async (req, res) => {
   try {
     const token = req.body.token;
-    refreshTokens = refreshTokens.filter((t) => t !== token);
-    res.sendStatus(204);
+    const revoked = await dbOperations.revokeRefreshToken(token);
+
+    if (revoked) {
+      res.sendStatus(204);
+    } else {
+      res.status(400).json({ error: "Token not found or already revoked" });
+    }
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -218,14 +219,16 @@ app.delete("/logout", validateToken, (req, res) => {
  *       400:
  *         description: არასწორი მონაცემები
  */
-app.post("/login", validateLogin, (req, res) => {
+app.post("/login", validateLogin, async (req, res) => {
   try {
     const username = req.body.username;
     const user = { name: username };
 
     const accessToken = generateAccessToken(user);
     const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
-    refreshTokens.push(refreshToken);
+
+    // Store refresh token in database
+    await dbOperations.addRefreshToken(refreshToken, username);
 
     res.json({ accessToken: accessToken, refreshToken: refreshToken });
   } catch (error) {
