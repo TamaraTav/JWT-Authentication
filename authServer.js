@@ -4,6 +4,8 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const Joi = require("joi");
 const cors = require("cors");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swagger");
 const app = express();
 const jwt = require("jsonwebtoken");
 
@@ -66,6 +68,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use(express.json());
 
 // Input Validation Schemas
@@ -112,6 +117,30 @@ const validateToken = (req, res, next) => {
 
 let refreshTokens = [];
 
+/**
+ * @swagger
+ * /token:
+ *   post:
+ *     summary: გაახლე access token
+ *     description: refresh token-ით ახალი access token-ის მიღება
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TokenRequest'
+ *     responses:
+ *       200:
+ *         description: წარმატებით განახლებული access token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TokenResponse'
+ *       401:
+ *         description: refresh token არ არის მოწოდებული
+ *       403:
+ *         description: არასწორი refresh token
+ */
 app.post("/token", validateToken, (req, res) => {
   try {
     const refreshToken = req.body.token;
@@ -138,6 +167,24 @@ app.post("/token", validateToken, (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /logout:
+ *   delete:
+ *     summary: გამოსვლა
+ *     description: refresh token-ის წაშლა და გამოსვლა
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TokenRequest'
+ *     responses:
+ *       204:
+ *         description: წარმატებით გამოსული
+ *       400:
+ *         description: არასწორი მონაცემები
+ */
 app.delete("/logout", validateToken, (req, res) => {
   try {
     const token = req.body.token;
@@ -149,6 +196,28 @@ app.delete("/logout", validateToken, (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: ავტორიზაცია
+ *     description: მომხმარებლის ავტორიზაცია და ტოკენების მიღება
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: წარმატებით ავტორიზებული
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/LoginResponse'
+ *       400:
+ *         description: არასწორი მონაცემები
+ */
 app.post("/login", validateLogin, (req, res) => {
   try {
     const username = req.body.username;

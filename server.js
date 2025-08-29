@@ -4,6 +4,8 @@ const express = require("express");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const cors = require("cors");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swagger");
 const app = express();
 const jwt = require("jsonwebtoken");
 
@@ -66,6 +68,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use(express.json());
 
 const posts = [
@@ -79,6 +84,28 @@ const posts = [
   },
 ];
 
+/**
+ * @swagger
+ * /posts:
+ *   get:
+ *     summary: მიიღე მომხმარებლის პოსტები
+ *     description: JWT ტოკენით დაცული endpoint პოსტების მისაღებად
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: წარმატებით მიღებული პოსტები
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
+ *       401:
+ *         description: ავტორიზაცია საჭიროა
+ *       403:
+ *         description: არასწორი ტოკენი
+ */
 app.get("/posts", authenticateToken, (req, res) => {
   try {
     const userPosts = posts.filter((post) => post.username === req.user.name);

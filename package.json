@@ -19,7 +19,9 @@
     "express-rate-limit": "^8.0.1",
     "helmet": "^8.1.0",
     "joi": "^18.0.1",
-    "jsonwebtoken": "^8.5.1"
+    "jsonwebtoken": "^8.5.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
