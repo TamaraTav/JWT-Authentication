@@ -49,6 +49,23 @@ const authLimiter = rateLimit({
 });
 app.use("/login", authLimiter);
 
+// Request Logging Middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`📥 ${req.method} ${req.path} - ${new Date().toISOString()}`);
+
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    const status = res.statusCode;
+    const statusIcon = status >= 400 ? "❌" : status >= 300 ? "⚠️" : "✅";
+    console.log(
+      `${statusIcon} ${req.method} ${req.path} - ${status} - ${duration}ms`
+    );
+  });
+
+  next();
+});
+
 app.use(express.json());
 
 // Input Validation Schemas
