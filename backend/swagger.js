@@ -96,7 +96,7 @@ const swaggerOptions = {
       },
     },
   },
-  apis: ["./server.js", "./authServer.js"],
+  apis: ["./backend/server.js", "./backend/authServer.js"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);

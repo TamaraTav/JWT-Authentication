@@ -7,6 +7,9 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
 const { dbOperations } = require("./database");
+
+// Initialize database on startup
+dbOperations.initDatabase().catch(console.error);
 const app = express();
 const jwt = require("jsonwebtoken");
 
@@ -37,6 +40,7 @@ const corsOptions = {
     : [
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:3002",
         "http://localhost:5173",
       ],
   credentials: true,

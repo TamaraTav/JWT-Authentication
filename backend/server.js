@@ -36,6 +36,7 @@ const corsOptions = {
     : [
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:3002",
         "http://localhost:5173",
       ],
   credentials: true,
@@ -73,16 +74,20 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(express.json());
 
-const posts = [
-  {
-    username: "Tamara",
-    title: "Post 1",
-  },
-  {
-    username: "Jim",
-    title: "Post 2",
-  },
-];
+const { pool } = require("./database");
+
+// Get posts from database
+async function getPosts() {
+  try {
+    const result = await pool.query(
+      "SELECT username, title FROM posts ORDER BY created_at DESC"
+    );
+    return result.rows;
+  } catch (error) {
+    console.error("❌ Error fetching posts:", error);
+    return [];
+  }
+}
 
 /**
  * @swagger
@@ -106,8 +111,9 @@ const posts = [
  *       403:
  *         description: არასწორი ტოკენი
  */
-app.get("/posts", authenticateToken, (req, res) => {
+app.get("/posts", authenticateToken, async (req, res) => {
   try {
+    const posts = await getPosts();
     const userPosts = posts.filter((post) => post.username === req.user.name);
     res.json(userPosts);
   } catch (error) {

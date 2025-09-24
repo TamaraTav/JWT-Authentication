@@ -1,8 +1,14 @@
 import axios from "axios";
 
 // API base URLs
-const AUTH_API = "http://localhost:4000";
-const POSTS_API = "http://localhost:3001";
+const AUTH_API =
+  process.env.NODE_ENV === "production"
+    ? "https://jwtpractice.com/api/auth"
+    : "http://localhost:4000";
+const POSTS_API =
+  process.env.NODE_ENV === "production"
+    ? "https://jwtpractice.com/api"
+    : "http://localhost:3001";
 
 // Create axios instances
 const authApi = axios.create({
